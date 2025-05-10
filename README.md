@@ -1,3 +1,4 @@
+
 # Traefik для локальной разработки (только HTTP)
 
 Этот проект позволяет использовать [Traefik](https://traefik.io/) как локальный reverse-proxy для разработки на вашей машине. Traefik будет слушать порт 80 и проксировать запросы к вашим приложениям по доменам вида `mysite.local`.
@@ -72,6 +73,29 @@ services:
 - `traefik.http.routers.app.rule=Host(`mysite.local`)` — указывает домен, по которому будет доступно приложение.
 - `traefik.http.routers.app.entrypoints=web` — использует HTTP (80 порт).
 
+## Дашборд Traefik
+
+Traefik предоставляет удобный дашборд для мониторинга и отладки маршрутов.
+
+### Как включить дашборд
+
+1. В `docker-compose.yml` должен быть проброшен порт 8080 и добавлены параметры:
+
+    ```yaml
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--entrypoints.traefik.address=:8080"
+    ports:
+      - "8080:8080"
+    ```
+
+2. После запуска Traefik дашборд будет доступен по адресу:  
+   [http://localhost:8080](http://localhost:8080)
+
+> ⚠️ **Внимание:**  
+> Дашборд открыт без авторизации (`--api.insecure=true`). Не делайте так в продакшене!
+
 ## Примечания
 
 - Для каждого нового приложения используйте уникальный домен (например, `another.local`) и добавляйте его в hosts.
@@ -80,3 +104,56 @@ services:
 ---
 
 **Теперь вы можете открывать http://mysite.local в браузере и видеть ваше приложение!**
+
+---
+
+## Troubleshooting
+
+### 80 порт должен быть свободен
+
+Traefik не сможет стартовать, если порт 80 уже занят другим процессом (например, IIS, Apache, Nginx и др.).
+
+#### Как проверить, занят ли порт 80
+
+##### Windows
+
+Откройте командную строку и выполните:
+
+```sh
+netstat -ano | findstr :80
+```
+
+В колонке PID будет идентификатор процесса, который занимает порт.
+
+##### Linux (Ubuntu)
+
+```sh
+sudo lsof -i :80
+```
+или
+```sh
+sudo netstat -tulpn | grep :80
+```
+
+#### Как освободить порт 80
+
+- Найдите процесс по PID и завершите его через диспетчер задач (Windows) или командой `kill` (Linux).
+- На Windows часто порт 80 занимает служба "World Wide Web Publishing Service" (IIS). Остановите её:
+
+    ```sh
+    net stop w3svc
+    iisreset /stop
+    ```
+
+- На Linux остановите соответствующий сервис, например:
+
+    ```sh
+    sudo systemctl stop apache2
+    sudo systemctl stop nginx
+    ```
+
+После освобождения порта 80 перезапустите Traefik:
+
+```sh
+docker compose up -d
+```
