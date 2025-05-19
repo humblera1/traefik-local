@@ -7,6 +7,10 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
 
+#      - "-log.level=DEBUG"
+#      - "-accesslog=true"
+#      - "-accesslog.format=json"
+
       # HTTP entrypoint
       - "--entrypoints.web.address=:80"
 
